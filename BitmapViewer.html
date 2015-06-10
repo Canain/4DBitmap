@@ -1,0 +1,180 @@
+<html>
+
+<head>
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script>
+        function BitmapViewer(bitmap) {
+            var self = this;
+
+            this.scene = new THREE.Scene();
+            this.window = $(window);
+            this.width = this.window.width();
+            this.height = this.window.height();
+            this.ratio = this.width / this.height;
+            this.fov = 75;
+            this.camera = new THREE.PerspectiveCamera(this.fov, this.ratio, 1, 10000);
+            this.camera.position.z = 10;
+
+            this.controls = new THREE.OrbitControls(this.camera);
+
+            this.bitmap = bitmap;
+
+            this.meshes = [];
+
+
+            this.geometry = new THREE.BoxGeometry(1, 1, 1);
+            this.material = new THREE.MeshBasicMaterial({
+                color: 0xff0000,
+                wireframe: true
+            });
+
+            this.frame = 0;
+            this.time = 0;
+
+            this.renderer = new THREE.WebGLRenderer();
+            this.renderer.setSize(this.width, this.height);
+
+            this.canvas = this.renderer.domElement;
+        }
+
+        Object.defineProperty(BitmapViewer.prototype, 'time', {
+            get: function() {
+                return this._time;
+            },
+            set: function(val) {
+                this._time = val;
+                for (var i = 0; i < this.meshes.length; i++) {
+                    this.scene.remove(this.meshes[i]);
+                }
+
+                this.meshes = [];
+                var bitmap3d = this.bitmap[this._time];
+                for (var z = 0; z < bitmap3d.length; z++) {
+                    var bitmap2d = bitmap3d[z];
+                    for (var x = 0; x < bitmap2d.length; x++) {
+                        var bitmap1d = bitmap2d[x];
+                        for (var y = 0; y < bitmap1d.length; y++) {
+                            var bit = bitmap1d[y];
+                            if (bit) {
+                                var mesh = new THREE.Mesh(this.geometry, this.material);
+                                mesh.position.set(x, y, z);
+                                this.meshes.push(mesh);
+                            }
+                        }
+                    }
+                }
+
+                for (var i = 0; i < this.meshes.length; i++) {
+                    this.scene.add(this.meshes[i]);
+                }
+            }
+        });
+
+        BitmapViewer.prototype.draw = function() {
+            if (this.frame % 60 == 0) {
+                this.time = (this.time + 1) % this.bitmap.length;
+            }
+            this.renderer.render(this.scene, this.camera);
+            this.frame++;
+        };
+
+        BitmapViewer.prototype.step = function() {
+            this.draw();
+            requestAnimationFrame(this.step.bind(this));
+        };
+
+        BitmapViewer.prototype.start = function() {
+            requestAnimationFrame(this.step.bind(this));
+        };
+
+        var viewer;
+
+        $(document).ready(function() {
+            var bitmap = [
+                [
+                    [
+                        [1, 1, 1],
+                        [1, 0, 1],
+                        [1, 1, 1]
+                    ],
+                    [
+                        [1, 0, 1],
+                        [0, 0, 0],
+                        [1, 0, 1]
+                    ],
+                    [
+                        [1, 1, 1],
+                        [1, 0, 1],
+                        [1, 1, 1]
+                    ]
+                ],
+                [
+                    [
+                        [1, 0, 1],
+                        [1, 0, 1],
+                        [1, 0, 1]
+                    ],
+                    [
+                        [1, 0, 1],
+                        [0, 0, 0],
+                        [1, 0, 1]
+                    ],
+                    [
+                        [1, 0, 1],
+                        [1, 0, 1],
+                        [1, 0, 1]
+                    ]
+                ],
+                [
+                    [
+                        [1, 0, 1],
+                        [0, 0, 0],
+                        [1, 0, 1]
+                    ],
+                    [
+                        [1, 0, 1],
+                        [0, 0, 0],
+                        [1, 0, 1]
+                    ],
+                    [
+                        [1, 0, 1],
+                        [0, 0, 0],
+                        [1, 0, 1]
+                    ]
+                ],
+                [
+                    [
+                        [1, 0, 1],
+                        [0, 0, 0],
+                        [1, 0, 1]
+                    ],
+                    [
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0]
+                    ],
+                    [
+                        [1, 0, 1],
+                        [0, 0, 0],
+                        [1, 0, 1]
+                    ]
+                ]
+            ]
+
+            viewer = new BitmapViewer(bitmap);
+
+            $('body').append($(viewer.canvas));
+
+            viewer.start();
+        });
+    </script>
+</head>
+
+</html>
